@@ -1,10 +1,4 @@
-/**
- * URBEX.MAP — Backend Server (CONECTADO)
- * Node.js + Express + Stripe + Resend
- */
-
 require('dotenv').config();
-
 const express  = require('express');
 const stripe   = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors     = require('cors');
@@ -13,27 +7,15 @@ const { Resend } = require('resend');
 const app    = express();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const MAP_URLS = {
-  norte:    process.env.MAP_URL_NORTE    || 'https://maps.app.goo.gl/TU-ENLACE-NORTE',
-  sur:      process.env.MAP_URL_SUR      || 'https://maps.app.goo.gl/TU-ENLACE-SUR',
-  completo: process.env.MAP_URL_COMPLETO || 'https://maps.app.goo.gl/TU-ENLACE-COMPLETO',
-};
+// ✨ LA MAGIA: Render detecta solo su URL real de internet. Si falla, usa localhost.
+const BASE_URL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
-// Permite conexiones
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['POST', 'GET'],
-}));
-
-// ✨ LA LÍNEA MÁGICA: Sirve tu index.html automáticamente en el puerto 3000
+app.use(cors({ origin: BASE_URL, methods: ['POST', 'GET'] }));
 app.use(express.static(__dirname));
-
-// RUTA 1: Enviar al usuario a Stripe
 app.use('/api/checkout', express.json());
+
 app.post('/api/checkout', async (req, res) => {
   const { priceId, email, pack } = req.body;
-  if (!priceId || !email || !pack) return res.status(400).json({ error: 'Faltan campos.' });
-  
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -41,34 +23,41 @@ app.post('/api/checkout', async (req, res) => {
       locale: 'es',
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
-      success_url: `http://localhost:3000/success.html?sid={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `http://localhost:3000/#pricing`,
+      // Ahora Stripe te devolverá a la web real de Render automáticamente
+      success_url: `${BASE_URL}/success.html?sid={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${BASE_URL}/#pricing`,
       metadata: { pack, email },
     });
     res.json({ url: session.url });
   } catch (err) {
-    console.error('[Stripe] Error:', err.message);
-    res.status(500).json({ error: 'Error al iniciar el pago.' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// RUTA 2: Recibir confirmación de Stripe y enviar Email
-app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  res.json({ received: true }); // Simplemente responde ok para pruebas locales
-});
-
-// RUTA 3: Verificar pago
 app.get('/verify', async (req, res) => {
   const { sid } = req.query;
+  if (!sid) return res.status(400).json({ ok: false });
+
   try {
     const session = await stripe.checkout.sessions.retrieve(sid);
-    res.json({ ok: session.payment_status === 'paid', pack: session.metadata?.pack });
+    const email = session.metadata?.email;
+    
+    if (session.payment_status === 'paid' && email) {
+      // Enviar el correo real a través de Resend en la nube
+      await resend.emails.send({
+        from:    'URBEX.MAP <onboarding@resend.dev>', 
+        to:      email, // Recuerda: En pruebas de Resend, usa tu propio correo de registro
+        subject: '🗺️ Tu Archivo Urbex está listo',
+        html: `<h1>¡Tu pago en la nube fue un éxito!</h1><p>Aquí tienes tu acceso privado a los mapas reales de la web.</p>`
+      });
+      console.log(`[Render] Correo enviado con éxito a ${email}`);
+    }
+    res.json({ ok: session.payment_status === 'paid' });
   } catch (err) {
+    console.error('[Error de envío]:', err.message);
     res.status(400).json({ ok: false });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🗺️  URBEX.MAP ¡Conectado con éxito en http://localhost:${PORT}!`);
-});
+app.listen(PORT, () => console.log(`🗺️ Motor corriendo en el puerto ${PORT}`));
