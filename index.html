@@ -1654,27 +1654,62 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       completo:  'https://www.google.com/maps/d/edit?mid=1B-wN1Fe6QcYNCHETVho2i6ADRwWTXxM&usp=sharing',
     };
 
-    // Enviar email automático con Resend
-    await resend.emails.send({
-      from: 'URBEX.MAP <noreply@urbex.map>',
-      to:   email,
-      subject: '🗺️ Tu Archivo Urbex está listo — Acceso inmediato',
-      html: `
-        <div style="background:#080808;color:#EDE8DC;font-family:sans-serif;padding:40px;border-radius:8px;max-width:540px;">
-          <h1 style="color:#D6FF00;font-size:28px;margin-bottom:8px;">Bienvenido al archivo.</h1>
-          <p style="color:#7A7872;margin-bottom:28px;">Tu pack <strong style="color:#EDE8DC">${pack.toUpperCase()}</strong> está listo.</p>
-          <a href="${MAP_URLS[pack]}"
-             style="display:inline-block;background:#D6FF00;color:#080808;padding:14px 28px;font-weight:700;text-decoration:none;border-radius:4px;font-size:15px;letter-spacing:0.05em;">
-            Abrir mi Mapa en Google Maps →
-          </a>
-          <p style="margin-top:28px;font-size:12px;color:#383630;">
-            Este enlace es personal e intransferible. No lo compartas.<br>
-            ¿Problemas? Escríbenos a urbexspain1@gmail.com
-          </p>
-        </div>
-      `
-    });
+   // Enviar email automático con Resend
+  let botonHTML = '';
+  let tituloPack = '';
+  let detallePack = '';
+
+  if (pack === 'norte') {
+    tituloPack = 'Mitad Norte';
+    detallePack = 'Incluye Galicia, Asturias, Cantabria, País Vasco, Navarra, La Rioja, Castilla y León, Aragón, Cataluña y Madrid Norte.';
+    botonHTML = `<a href="${MAP_URLS.norte}" style="background-color: #ff5722; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Abrir Mapa Norte</a>`;
+  } else if (pack === 'sur') {
+    tituloPack = 'Mitad Sur';
+    detallePack = 'Incluye Andalucía, Extremadura, Castilla-La Mancha, Región de Murcia, Comunidad Valenciana, Baleares, Canarias y Madrid Sur.';
+    botonHTML = `<a href="${MAP_URLS.sur}" style="background-color: #2196f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Abrir Mapa Sur</a>`;
+  } else {
+    tituloPack = 'España Completa';
+    detallePack = '¡Has adquirido el acceso total! Aquí tienes los mapas de ambas mitades de España.';
+    botonHTML = `
+      <div style="margin-bottom: 20px;">
+        <p style="margin: 0 0 8px 0; font-weight: bold; color: #ff5722;">📍 Zona Norte:</p>
+        <a href="${MAP_URLS.norte}" style="background-color: #ff5722; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Abrir Mapa Norte</a>
+      </div>
+      <div>
+        <p style="margin: 0 0 8px 0; font-weight: bold; color: #2196f3;">📍 Zona Sur:</p>
+        <a href="${MAP_URLS.sur}" style="background-color: #2196f3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Abrir Mapa Sur</a>
+      </div>
+    `;
   }
+
+  await resend.emails.send({
+    from: 'URBEX.MAP <noreply@urbex.map>', // Asegúrate de que este dominio esté verificado en tu cuenta de Resend
+    to: email,
+    subject: `🎒 Tu Archivo Urbex está listo — Acceso inmediato (${tituloPack})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+        <h2 style="color: #222; border-bottom: 2px solid #ddd; padding-bottom: 10px;">¡Gracias por tu compra! 🎒</h2>
+        <p>Ya está todo listo para tu próxima aventura. Aquí tienes el acceso exclusivo a tu mapa de ubicaciones:</p>
+        
+        <div style="background-color: #f9f9f9; padding: 20px; border-left: 4px solid #4caf50; margin-bottom: 25px; border-radius: 4px;">
+          <h3 style="margin-top: 0; color: #4caf50;">🗺️ Pack ${tituloPack}</h3>
+          <p style="margin-bottom: 20px; color: #555;">${detallePack}</p>
+          ${botonHTML}
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+        
+        <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 4px; font-size: 14px;">
+          💡 <strong>Consejo Urbex:</strong> Asegúrate de tener iniciada sesión con tu cuenta de Google en el móvil antes de hacer clic. Así los mapas se guardarán solos en tu app de Google Maps (dentro de <em>"Guardados" -> "Mapas"</em>) y podrás usarlos con el GPS directamente en el coche.
+        </div>
+        
+        <p style="font-size: 11px; color: #999; margin-top: 30px; text-align: center;">
+          Este mapa es de uso exclusivo para compradores. Queda prohibida la distribución, copia masiva o reventa de estos enlaces.
+        </p>
+      </div>
+    `
+  });
+}
 
   res.json({ received: true });
 });
