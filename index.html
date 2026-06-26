@@ -1649,9 +1649,9 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
     // 🗺️ Tus URLs privadas de Google Maps (un enlace diferente por pack)
     const MAP_URLS = {
-      norte:    'https://maps.google.com/?cid=TU_LINK_PRIVADO_NORTE',
-      sur:      'https://maps.google.com/?cid=TU_LINK_PRIVADO_SUR',
-      completo: 'https://maps.google.com/?cid=TU_LINK_PRIVADO_COMPLETO',
+      norte:    'https://www.google.com/maps/d/edit?mid=1zqD1W8sdb79yObC8OemV3MYpsKy85gE&usp=sharing',
+      sur:      'https://www.google.com/maps/d/edit?mid=1ZLfGPQCUj3XhJCR8RLKgpc0NQOB3kts&usp=sharing',
+      completo:  'https://www.google.com/maps/d/edit?mid=1B-wN1Fe6QcYNCHETVho2i6ADRwWTXxM&usp=sharing',
     };
 
     // Enviar email automático con Resend
@@ -1669,7 +1669,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
           </a>
           <p style="margin-top:28px;font-size:12px;color:#383630;">
             Este enlace es personal e intransferible. No lo compartas.<br>
-            ¿Problemas? Escríbenos a hola@urbex.map
+            ¿Problemas? Escríbenos a urbexspain1@gmail.com
           </p>
         </div>
       `
